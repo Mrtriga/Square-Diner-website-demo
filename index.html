@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Square Diner — Tribeca, NYC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Special+Elite&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#1F4E4A;
+    --teal-dark:#153734;
+    --cream:#F5E6C8;
+    --chrome:#C9CDD3;
+    --red:#C1272D;
+    --ink:#1A1512;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Oswald',sans-serif;
+    font-weight:400;
+  }
+  a{color:inherit;}
+
+  /* ===== HEADER ===== */
+  header{
+    background:var(--teal);
+    padding:18px 30px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    position:sticky;
+    top:0;
+    z-index:50;
+    border-bottom:4px solid var(--red);
+  }
+  .wordmark{
+    font-family:'Alfa Slab One',cursive;
+    color:var(--cream);
+    font-size:22px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+  }
+  .wordmark span{color:var(--red);}
+  nav a{
+    color:var(--cream);
+    text-decoration:none;
+    font-size:14px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    margin-left:26px;
+    font-weight:600;
+  }
+  nav a::after{
+    content:"";
+    display:block;
+  }
+  .menu-toggle{display:none;color:var(--cream);font-size:26px;cursor:pointer;}
+  .header-right{
+    display:flex;
+    align-items:center;
+    gap:18px;
+  }
+  .basket-btn{
+    position:relative;
+    background:var(--red);
+    color:var(--cream);
+    border:none;
+    border-radius:30px;
+    padding:9px 16px 9px 14px;
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    letter-spacing:0.5px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    cursor:pointer;
+  }
+  .basket-btn .count{
+    background:var(--cream);
+    color:var(--red);
+    border-radius:50%;
+    width:20px;
+    height:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    font-weight:700;
+  }
+  @media (max-width:760px){
+    nav{display:none;position:absolute;top:64px;right:0;background:var(--teal-dark);flex-direction:column;padding:16px 24px;width:200px;}
+    nav.active{display:flex;}
+    nav a{margin:10px 0;}
+    .menu-toggle{display:block;}
+    .basket-btn{padding:7px 12px 7px 10px;font-size:13px;}
+  }
+
+  /* ===== BASKET PANEL ===== */
+  .basket-panel{
+    position:fixed;
+    top:0;
+    right:-360px;
+    width:340px;
+    max-width:88vw;
+    height:100%;
+    background:var(--cream);
+    z-index:200;
+    box-shadow:-10px 0 30px rgba(0,0,0,0.35);
+    transition:right 0.35s ease;
+    display:flex;
+    flex-direction:column;
+    padding:26px 22px;
+  }
+  .basket-panel.open{right:0;}
+  .basket-panel h3{
+    font-family:'Alfa Slab One',cursive;
+    color:var(--teal);
+    font-size:22px;
+    margin:0 0 20px;
+  }
+  .basket-close{
+    position:absolute;
+    top:20px;
+    right:20px;
+    background:none;
+    border:none;
+    font-size:22px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .basket-items{
+    flex:1;
+    overflow-y:auto;
+  }
+  .basket-empty{
+    font-family:'Special Elite',monospace;
+    font-size:14px;
+    color:#777;
+    text-align:center;
+    margin-top:40px;
+  }
+  .basket-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:'Special Elite',monospace;
+    font-size:14px;
+    padding:12px 0;
+    border-bottom:1px dotted #bbb;
+  }
+  .basket-item .name{max-width:60%;}
+  .basket-item .qty-controls{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .basket-item button{
+    background:var(--teal);
+    color:var(--cream);
+    border:none;
+    width:22px;
+    height:22px;
+    border-radius:4px;
+    cursor:pointer;
+    font-size:14px;
+    line-height:1;
+  }
+  .basket-total{
+    border-top:2px solid var(--teal);
+    padding-top:16px;
+    margin-top:10px;
+    display:flex;
+    justify-content:space-between;
+    font-family:'Special Elite',monospace;
+    font-weight:bold;
+    font-size:16px;
+  }
+  /* .basket-cta base styles moved below near payment modal styles */
+  .basket-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.4);
+    z-index:150;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.35s ease;
+  }
+  .basket-overlay.open{opacity:1;pointer-events:auto;}
+
+  /* ===== PAYMENT MODAL ===== */
+  .pay-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+    z-index:250;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.3s ease;
+  }
+  .pay-overlay.open{opacity:1;pointer-events:auto;}
+  .pay-modal{
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%) scale(0.94);
+    width:380px;
+    max-width:90vw;
+    max-height:88vh;
+    overflow-y:auto;
+    background:#fff;
+    border-radius:12px;
+    z-index:260;
+    padding:30px 26px 26px;
+    box-shadow:0 30px 60px rgba(0,0,0,0.4);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.3s ease, transform 0.3s ease;
+    font-family:'Oswald',sans-serif;
+  }
+  .pay-modal.open{
+    opacity:1;
+    pointer-events:auto;
+    transform:translate(-50%,-50%) scale(1);
+  }
+  .stripe-badge{
+    font-size:12px;
+    color:#8892a0;
+    letter-spacing:0.3px;
+    margin-bottom:16px;
+  }
+  .stripe-badge strong{
+    color:#635bff;
+    font-style:italic;
+    font-weight:700;
+  }
+  .pay-modal h3{
+    font-family:'Alfa Slab One',cursive;
+    color:var(--ink);
+    font-size:22px;
+    margin:0 0 8px;
+  }
+  .pay-total-line{
+    font-size:14px;
+    color:#555;
+    margin:0 0 20px;
+  }
+  .pay-label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:#555;
+    margin:14px 0 6px;
+    letter-spacing:0.3px;
+  }
+  .pay-input{
+    width:100%;
+    padding:11px 12px;
+    border:1.5px solid #d8dce2;
+    border-radius:6px;
+    font-size:15px;
+    font-family:'Oswald',sans-serif;
+    color:#333;
+    background:#fbfbfc;
+  }
+  .pay-input::placeholder{color:#adb3bc;}
+  .pay-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  .pay-submit{
+    width:100%;
+    background:var(--teal);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:13px;
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:0.3px;
+    cursor:pointer;
+    margin-top:22px;
+  }
+  .pay-submit:hover{background:var(--teal-dark);}
+  .pay-note{
+    font-size:11.5px;
+    color:#9aa0a8;
+    text-align:center;
+    margin-top:12px;
+    line-height:1.5;
+  }
+  .pay-success-icon{
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    background:#e4f6ec;
+    color:#1f9d55;
+    font-size:28px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:0 auto 18px;
+  }
+  #paySuccessView{text-align:center;}
+  .basket-cta{
+    margin-top:0;
+    text-align:center;
+    text-decoration:none;
+    padding:13px;
+    border-radius:6px;
+    font-weight:600;
+    letter-spacing:0.5px;
+    display:block;
+    border:none;
+    font-family:'Oswald',sans-serif;
+    font-size:14px;
+    cursor:pointer;
+    width:100%;
+  }
+  .pay-cta{
+    background:#635bff;
+    color:#fff;
+    margin-top:18px;
+  }
+  .pay-cta:hover{background:#4f47e6;}
+  .call-cta{
+    background:var(--red);
+    color:var(--cream);
+    margin-top:10px;
+  }
+
+  /* ===== HERO ===== */
+  .hero{
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.04), transparent 40%),
+      var(--teal);
+    color:var(--cream);
+    text-align:center;
+    padding:100px 20px 90px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::after{
+    content:"";
+    position:absolute;
+    bottom:0; left:0; right:0;
+    height:14px;
+    background:repeating-linear-gradient(45deg, var(--chrome) 0 14px, var(--cream) 14px 28px);
+  }
+  .marquee{
+    display:inline-block;
+    border:3px solid var(--chrome);
+    border-radius:6px;
+    padding:10px 26px;
+    margin-bottom:26px;
+    font-family:'Special Elite',monospace;
+    font-size:13px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--chrome);
+    opacity:0;
+    animation:
+      fade-up 0.8s ease forwards 0.1s,
+      neon-glow 2.2s ease-in-out infinite 0.9s,
+      neon-flicker 6s linear infinite 0.9s;
+  }
+  @keyframes neon-glow{
+    0%, 100%{
+      text-shadow:0 0 6px rgba(201,205,211,0.5), 0 0 14px rgba(201,205,211,0.25);
+      box-shadow:0 0 10px rgba(201,205,211,0.25);
+    }
+    50%{
+      text-shadow:0 0 14px rgba(255,255,255,0.9), 0 0 28px rgba(201,205,211,0.6);
+      box-shadow:0 0 22px rgba(201,205,211,0.5);
+    }
+  }
+  @keyframes neon-flicker{
+    0%, 91%, 94%, 97%, 100%{ opacity:1; }
+    92%, 95%{ opacity:0.25; }
+    93%, 96%{ opacity:0.85; }
+  }
+  @keyframes fade-up{
+    from{opacity:0; transform:translateY(18px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .marquee{animation:none; opacity:1;}
+  }
+  .hero h1{
+    font-family:'Alfa Slab One',cursive;
+    font-size:clamp(40px,8vw,84px);
+    margin:0;
+    line-height:1.05;
+    text-shadow: 3px 3px 0 var(--red);
+    opacity:0;
+    animation: fade-up 0.8s ease forwards 0.35s;
+  }
+  .hero-sub{
+    opacity:0;
+    animation: fade-up 0.8s ease forwards 0.6s;
+    max-width:520px;
+    margin:26px auto 0;
+    font-size:18px;
+    line-height:1.6;
+    color:#e6ddc0;
+  }
+  .hero-note{
+    margin-top:34px;
+    font-family:'Special Elite',monospace;
+    font-size:14px;
+    color:var(--chrome);
+    letter-spacing:1px;
+    opacity:0;
+    animation: fade-up 0.8s ease forwards 0.85s;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .hero h1, .hero-sub, .hero-note{animation:none; opacity:1;}
+  }
+
+  /* ===== ABOUT ===== */
+  .about{
+    max-width:780px;
+    margin:0 auto;
+    padding:80px 24px 60px;
+    text-align:center;
+  }
+  .eyebrow{
+    font-family:'Special Elite',monospace;
+    font-size:13px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--red);
+    margin-bottom:16px;
+  }
+  .about h2{
+    font-family:'Alfa Slab One',cursive;
+    font-size:clamp(28px,5vw,42px);
+    margin:0 0 20px;
+    color:var(--teal);
+  }
+  .about p{
+    font-size:17px;
+    line-height:1.75;
+    color:#3a3128;
+  }
+
+  /* ===== MENU — SIGNATURE ORDER TICKET ===== */
+  .menu-section{
+    background:var(--teal-dark);
+    padding:80px 20px 100px;
+    text-align:center;
+  }
+  .menu-section .eyebrow{color:var(--chrome);}
+  .menu-section h2{
+    font-family:'Alfa Slab One',cursive;
+    color:var(--cream);
+    font-size:clamp(28px,5vw,42px);
+    margin:0 0 46px;
+  }
+  .ticket{
+    max-width:420px;
+    margin:0 auto;
+    background:#fbf7ec;
+    color:var(--ink);
+    font-family:'Special Elite',monospace;
+    padding:34px 28px 40px;
+    text-align:left;
+    position:relative;
+    box-shadow:0 18px 40px rgba(0,0,0,0.35);
+    opacity:0;
+    transform:translateY(-70px) rotate(-3deg);
+    transition:opacity 0.6s ease, transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    clip-path: polygon(
+      0% 2%, 4% 0%, 8% 2%, 12% 0%, 16% 2%, 20% 0%, 24% 2%, 28% 0%, 32% 2%, 36% 0%,
+      40% 2%, 44% 0%, 48% 2%, 52% 0%, 56% 2%, 60% 0%, 64% 2%, 68% 0%, 72% 2%, 76% 0%,
+      80% 2%, 84% 0%, 88% 2%, 92% 0%, 96% 2%, 100% 0%,
+      100% 100%, 0% 100%
+    );
+  }
+  .ticket-head{
+    text-align:center;
+    font-size:13px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    border-bottom:1px dashed #999;
+    padding-bottom:14px;
+    margin-bottom:18px;
+  }
+  .ticket-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    font-size:15px;
+    padding:7px 0;
+    border-bottom:1px dotted #ccc;
+  }
+  .ticket-row span:first-child{max-width:56%;}
+  .ticket-row .price{white-space:nowrap;}
+  .add-btn{
+    background:var(--teal);
+    color:var(--cream);
+    border:none;
+    border-radius:4px;
+    padding:6px 12px;
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:12px;
+    letter-spacing:0.5px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background 0.2s ease, transform 0.15s ease;
+  }
+  .add-btn:hover{background:var(--teal-dark);}
+  .add-btn:active{transform:scale(0.94);}
+  .add-btn.added{background:var(--red);}
+  .ticket-total{
+    display:flex;
+    justify-content:space-between;
+    margin-top:18px;
+    padding-top:14px;
+    border-top:1px dashed #999;
+    font-size:16px;
+    font-weight:bold;
+  }
+  .ticket-foot{
+    text-align:center;
+    margin-top:22px;
+    font-size:12px;
+    color:#777;
+    letter-spacing:1px;
+  }
+  .ticket.printed{
+    opacity:1;
+    transform:translateY(0) rotate(0deg);
+  }
+  .ticket{
+    transition-property:opacity, transform, box-shadow;
+  }
+  .ticket:hover{
+    transform:translateY(-4px) rotate(-0.5deg);
+    box-shadow:0 24px 48px rgba(0,0,0,0.4);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ticket{opacity:1;transform:none;transition:none;}
+  }
+
+  /* ===== TESTIMONIALS ===== */
+  .testimonials{
+    padding:80px 20px 90px;
+    text-align:center;
+  }
+  .testimonials h2{
+    font-family:'Alfa Slab One',cursive;
+    font-size:clamp(28px,5vw,42px);
+    color:var(--teal);
+    margin:0 0 46px;
+  }
+  .testimonial-grid{
+    max-width:1000px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:24px;
+  }
+  .testimonial-card{
+    background:#fbf7ec;
+    border:2px solid var(--teal);
+    border-radius:4px;
+    padding:26px 22px;
+    text-align:left;
+    position:relative;
+    box-shadow:6px 6px 0 var(--chrome);
+  }
+  .testimonial-card .stars{
+    color:var(--red);
+    font-size:15px;
+    letter-spacing:2px;
+    margin-bottom:12px;
+  }
+  .testimonial-card p{
+    font-family:'Special Elite',monospace;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--ink);
+    margin:0 0 16px;
+  }
+  .testimonial-card .reviewer{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:0.5px;
+    color:var(--teal);
+    text-align:right;
+  }
+
+  /* ===== HOURS / CASH ===== */
+  .info-grid{
+    max-width:900px;
+    margin:0 auto;
+    padding:90px 24px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:24px;
+  }
+  .info-card{
+    background:var(--cream);
+    border:3px solid var(--teal);
+    border-radius:10px;
+    padding:30px 26px;
+    text-align:center;
+    transition:transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .info-card:hover{
+    transform:translateY(-6px);
+    box-shadow:0 14px 26px rgba(31,78,74,0.25);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .info-card, .ticket{transition:none;}
+  }
+  .info-card .icon{font-size:28px;display:block;margin-bottom:12px;}
+  .info-card h3{
+    font-family:'Alfa Slab One',cursive;
+    font-size:18px;
+    color:var(--teal);
+    margin:0 0 10px;
+  }
+  .info-card p{
+    font-size:15px;
+    line-height:1.6;
+    margin:0;
+    color:#3a3128;
+  }
+
+  /* ===== LOCATION / CONTACT ===== */
+  .contact{
+    background:var(--red);
+    color:var(--cream);
+    text-align:center;
+    padding:80px 24px;
+  }
+  .contact .eyebrow{color:var(--teal-dark);}
+  .contact h2{
+    font-family:'Alfa Slab One',cursive;
+    font-size:clamp(26px,5vw,38px);
+    margin:0 0 18px;
+  }
+  .contact-line{
+    font-family:'Special Elite',monospace;
+    font-size:16px;
+    margin:8px 0;
+  }
+  .contact-line a{text-decoration:underline;}
+
+  /* ===== FOOTER ===== */
+  footer{
+    background:var(--ink);
+    color:var(--chrome);
+    text-align:center;
+    padding:34px 20px;
+    font-family:'Special Elite',monospace;
+    font-size:12px;
+    letter-spacing:1px;
+  }
+  footer strong{color:var(--cream);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">Square <span>Diner</span></div>
+  <div class="header-right">
+    <button class="basket-btn" onclick="toggleBasket(true)">
+      🛍 Basket <span class="count" id="basketCount">0</span>
+    </button>
+    <div class="menu-toggle" onclick="document.querySelector('nav').classList.toggle('active')">&#9776;</div>
+  </div>
+  <nav>
+    <a href="#about">Our Story</a>
+    <a href="#menu">Menu</a>
+    <a href="#info">Hours</a>
+    <a href="#contact">Find Us</a>
+  </nav>
+</header>
+
+<div class="basket-overlay" id="basketOverlay" onclick="toggleBasket(false)"></div>
+<div class="basket-panel" id="basketPanel">
+  <button class="basket-close" onclick="toggleBasket(false)">✕</button>
+  <h3>Your Order</h3>
+  <div class="basket-items" id="basketItems">
+    <p class="basket-empty">Nothing added yet — tap "Add" on any item.</p>
+  </div>
+  <div class="basket-total" id="basketTotal" style="display:none;">
+    <span>Total</span><span id="basketTotalAmount">$0</span>
+  </div>
+  <button class="basket-cta pay-cta" id="basketPayCta" style="display:none;" onclick="openPayment()">💳 Pay with Card</button>
+  <a href="tel:+12129257188" class="basket-cta call-cta" id="basketCta" style="display:none;">Call to Place Order</a>
+</div>
+
+<div class="pay-overlay" id="payOverlay" onclick="closePayment()"></div>
+<div class="pay-modal" id="payModal">
+  <button class="basket-close" onclick="closePayment()">✕</button>
+
+  <div id="payFormView">
+    <div class="stripe-badge">Powered by <strong>stripe</strong></div>
+    <h3>Checkout</h3>
+    <p class="pay-total-line">Total due: <strong id="payTotalAmount">$0</strong></p>
+
+    <label class="pay-label">Card number</label>
+    <input class="pay-input" type="text" placeholder="4242 4242 4242 4242" disabled>
+
+    <div class="pay-row">
+      <div>
+        <label class="pay-label">Expiry</label>
+        <input class="pay-input" type="text" placeholder="MM / YY" disabled>
+      </div>
+      <div>
+        <label class="pay-label">CVC</label>
+        <input class="pay-input" type="text" placeholder="123" disabled>
+      </div>
+    </div>
+
+    <label class="pay-label">Email for receipt</label>
+    <input class="pay-input" type="text" placeholder="you@email.com" disabled>
+
+    <button class="pay-submit" onclick="fakePay()">Pay Now</button>
+    <p class="pay-note">Placeholder checkout — no real payment is processed in this demo.</p>
+  </div>
+
+  <div id="paySuccessView" style="display:none;">
+    <div class="pay-success-icon">✓</div>
+    <h3>Payment Successful</h3>
+    <p class="pay-total-line">This is a demo confirmation — in the live site, this connects to a real Stripe account.</p>
+    <button class="pay-submit" onclick="closePayment()">Done</button>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="marquee">Tribeca, New York — Since the 1920s</div>
+  <h1>Still Here.<br>Still Square.</h1>
+  <p class="hero-sub">
+    A hundred years on the same triangular corner of Varick &amp; Leonard.
+    Same booths. Same griddle. Same reason you keep coming back.
+  </p>
+  <p class="hero-note">☎ (212) 925-7188 — CASH ONLY, LIKE ALWAYS</p>
+</section>
+
+<section class="about" id="about">
+  <div class="eyebrow">The Story</div>
+  <h2>An Institution, Not a Trend</h2>
+  <p>
+    Long before Tribeca had a name for itself, there was a diner on this corner.
+    What started as a wooden shack before the Great Depression became a real
+    train-car diner — the kind built to last, not built to impress. Anna and
+    Teddy Karounos run it today the way it's always been run: honest food,
+    fast service, and a room that doesn't pretend to be anything other than
+    what it is.
+  </p>
+</section>
+
+<section class="menu-section" id="menu">
+  <div class="eyebrow">On the Griddle</div>
+  <h2>Today's Order</h2>
+  <div class="ticket">
+    <div class="ticket-head">Square Diner · Order Ticket</div>
+    <div class="ticket-row"><span>Griddle Cakes, butter &amp; jelly</span><span class="price">$11</span><button class="add-btn" data-name="Griddle Cakes" data-price="11" onclick="addItem(this)">+ Add</button></div>
+    <div class="ticket-row"><span>Cheese Omelet, potatoes &amp; toast</span><span class="price">$13</span><button class="add-btn" data-name="Cheese Omelet" data-price="13" onclick="addItem(this)">+ Add</button></div>
+    <div class="ticket-row"><span>Chicken Cutlet Salad</span><span class="price">$15</span><button class="add-btn" data-name="Chicken Cutlet Salad" data-price="15" onclick="addItem(this)">+ Add</button></div>
+    <div class="ticket-row"><span>Classic Tuna Melt</span><span class="price">$12</span><button class="add-btn" data-name="Tuna Melt" data-price="12" onclick="addItem(this)">+ Add</button></div>
+    <div class="ticket-row"><span>Diner Burger &amp; Fries</span><span class="price">$14</span><button class="add-btn" data-name="Diner Burger & Fries" data-price="14" onclick="addItem(this)">+ Add</button></div>
+    <div class="ticket-row"><span>Bottomless Coffee</span><span class="price">$3</span><button class="add-btn" data-name="Coffee" data-price="3" onclick="addItem(this)">+ Add</button></div>
+    <div class="ticket-foot">— sample items, full menu in-house —</div>
+  </div>
+</section>
+<section class="testimonials" id="testimonials">
+  <div class="eyebrow">What People Say</div>
+  <h2>Word on the Street</h2>
+  <div class="testimonial-grid">
+    <div class="testimonial-card">
+      <div class="stars">★★★★★</div>
+      <p>"Amazing service! Fantastic for events! 1 million stars"</p>
+      <div class="reviewer">— Gali Amit</div>
+    </div>
+    <div class="testimonial-card">
+      <div class="stars">★★★★★</div>
+      <p>"Our go-to spot for weekend brunch — staff works hard, food's always fresh, glasses never run empty. Locals and tourists both love this place."</p>
+      <div class="reviewer">— Alexis Davis</div>
+    </div>
+    <div class="testimonial-card">
+      <div class="stars">★★★★★</div>
+      <p>"Feels like stepping back in time — in the best way. Real diner food, real diner charm."</p>
+      <div class="reviewer">— placeholder review</div>
+    </div>
+  </div>
+</section>
+
+<section class="info-grid" id="info">
+  <div class="info-card">
+    <span class="icon">⏰</span>
+    <h3>Hours</h3>
+    <p>Mon–Tue 8am–4pm<br>Wed–Fri 8am–9pm<br>Sat 8am–7pm · Sun 8am–6pm</p>
+  </div>
+  <div class="info-card">
+    <span class="icon">💵</span>
+    <h3>Cash Only</h3>
+    <p>Always has been. It's part of the charm — and keeps the prices honest.</p>
+  </div>
+  <div class="info-card">
+    <span class="icon">🪑</span>
+    <h3>Seating</h3>
+    <p>Cozy inside, a few tables out front. Come early on weekends.</p>
+  </div>
+</section>
+
+<section class="contact" id="contact">
+  <div class="eyebrow">Find Us</div>
+  <h2>33 Leonard Street</h2>
+  <p class="contact-line">Corner of Varick &amp; Leonard, Tribeca</p>
+  <p class="contact-line">☎ <a href="tel:+12129257188">(212) 925-7188</a></p>
+  <p class="contact-line">✉ <a href="mailto:info@squarediner.com">info@squarediner.com</a></p>
+</section>
+
+<footer>
+  &copy; 2026 <strong>Square Diner</strong> — Tribeca, New York City. Demo concept, not the live site.
+</footer>
+
+<script>
+  const ticket = document.querySelector('.ticket');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        ticket.classList.add('printed');
+        observer.disconnect();
+      }
+    });
+  }, { threshold: 0.3 });
+  observer.observe(ticket);
+
+  // ===== NAV LINKS — smooth scroll without stacking browser history entries =====
+  document.querySelectorAll('nav a[href^="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.querySelector('nav').classList.remove('active');
+      const target = document.querySelector(link.getAttribute('href'));
+      if(target){
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  });
+
+  // ===== BASKET LOGIC =====
+  let basket = {}; // { name: { price, qty } }
+
+  function toggleBasket(open){
+    document.getElementById('basketPanel').classList.toggle('open', open);
+    document.getElementById('basketOverlay').classList.toggle('open', open);
+  }
+
+  function addItem(btn){
+    const name = btn.dataset.name;
+    const price = parseFloat(btn.dataset.price);
+    if(!basket[name]) basket[name] = { price, qty: 0 };
+    basket[name].qty++;
+    btn.classList.add('added');
+    btn.textContent = 'Added ✓';
+    setTimeout(() => {
+      btn.classList.remove('added');
+      btn.textContent = '+ Add';
+    }, 700);
+    renderBasket();
+    toggleBasket(true);
+  }
+
+  function changeQty(name, delta){
+    if(!basket[name]) return;
+    basket[name].qty += delta;
+    if(basket[name].qty <= 0) delete basket[name];
+    renderBasket();
+  }
+
+  function renderBasket(){
+    const itemsEl = document.getElementById('basketItems');
+    const totalEl = document.getElementById('basketTotal');
+    const totalAmountEl = document.getElementById('basketTotalAmount');
+    const ctaEl = document.getElementById('basketCta');
+    const payCtaEl = document.getElementById('basketPayCta');
+    const countEl = document.getElementById('basketCount');
+
+    const names = Object.keys(basket);
+    let totalQty = 0;
+    let totalPrice = 0;
+
+    if(names.length === 0){
+      itemsEl.innerHTML = '<p class="basket-empty">Nothing added yet — tap "Add" on any item.</p>';
+      totalEl.style.display = 'none';
+      ctaEl.style.display = 'none';
+      payCtaEl.style.display = 'none';
+      countEl.textContent = '0';
+      return;
+    }
+
+    itemsEl.innerHTML = names.map(name => {
+      const item = basket[name];
+      totalQty += item.qty;
+      totalPrice += item.qty * item.price;
+      return `
+        <div class="basket-item">
+          <span class="name">${name}</span>
+          <div class="qty-controls">
+            <button onclick="changeQty('${name}', -1)">−</button>
+            <span>${item.qty}</span>
+            <button onclick="changeQty('${name}', 1)">+</button>
+          </div>
+          <span>$${item.qty * item.price}</span>
+        </div>`;
+    }).join('');
+
+    totalEl.style.display = 'flex';
+    ctaEl.style.display = 'block';
+    payCtaEl.style.display = 'block';
+    totalAmountEl.textContent = '$' + totalPrice;
+    countEl.textContent = totalQty;
+  }
+
+  // ===== PAYMENT MODAL (placeholder — no real Stripe integration) =====
+  function currentTotal(){
+    return Object.values(basket).reduce((sum, item) => sum + item.qty * item.price, 0);
+  }
+
+  function openPayment(){
+    document.getElementById('payTotalAmount').textContent = '$' + currentTotal();
+    document.getElementById('payFormView').style.display = 'block';
+    document.getElementById('paySuccessView').style.display = 'none';
+    document.getElementById('payModal').classList.add('open');
+    document.getElementById('payOverlay').classList.add('open');
+  }
+
+  function closePayment(){
+    document.getElementById('payModal').classList.remove('open');
+    document.getElementById('payOverlay').classList.remove('open');
+  }
+
+  function fakePay(){
+    // Demo only — this does not process a real payment.
+    document.getElementById('payFormView').style.display = 'none';
+    document.getElementById('paySuccessView').style.display = 'block';
+  }
+</script>
+</body>
+</html>
